@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Заявка №{{ c.id }}{% endblock %}
+{% block body %}
+{% set locked = c.status in ('closed','cancelled') %}
+<div class="head">
+  <div><a class="back" href="{{ back }}">← К списку</a>
+    <h1>Заявка №{{ c.id }} <span class="st st-{{ c.status }}">{{ c.status|ru }}</span></h1></div>
+  <div class="actions">
+    {% if u.role == 'patient' and c.status == 'draft' %}
+      <form method="post" action="{{ base }}/submit"><button class="btn">Отправить на проверку</button></form>{% endif %}
+    {% if u.role == 'coordinator' and c.status == 'submitted' %}
+      <form method="post" action="{{ base }}/status"><input type="hidden" name="status" value="in_review"><button class="btn">Взять в работу</button></form>{% endif %}
+    {% if u.role == 'coordinator' and c.status == 'selected' %}
+      <form method="post" action="{{ base }}/status"><input type="hidden" name="status" value="closed"><button class="btn">Закрыть сопровождение</button></form>{% endif %}
+    {% if u.role in ('patient','coordinator') and c.status not in ('selected','closed','cancelled') %}
+      <form method="post" action="{{ base }}/cancel" onsubmit="return confirm('Отменить заявку? Это действие нельзя отменить.')"><button class="btn ghost danger">Отменить заявку</button></form>{% endif %}
+  </div>
+</div>
+
+<dl class="facts">
+  <div><dt>Направление</dt><dd>{{ spec.name }}</dd></div>
+  <div><dt>Страна лечения</dt><dd>{{ c.target_country or '—' }}</dd></div>
+  <div><dt>Бюджет</dt><dd>{{ ('до ' ~ c.budget_usd ~ ' USD') if c.budget_usd else '—' }}</dd></div>
+  {% if patient %}<div><dt>Пациент</dt><dd>{{ patient.full_name }}{% if u.role == 'coordinator' and patient.phone %}, {{ patient.phone }}{% endif %}</dd></div>{% endif %}
+  <div><dt>Создана</dt><dd>{{ c.created_at|dt }}</dd></div>
+</dl>
+
+<section class="panel"><h2>Описание</h2><p class="pre">{{ c.description }}</p></section>
+
+<section class="panel">
+  <h2>Документы</h2>
+  {% if docs %}<ul class="files">{% for x in docs %}
+    <li><a href="/api/v1/cases/{{ c.id }}/documents/{{ x.id }}/download">{{ x.file_name }}</a>
+    <span class="mute">{{ (x.size_bytes / 1024)|round|int }} КБ</span></li>{% endfor %}</ul>
+  {% else %}<p class="empty">Файлов нет.</p>{% endif %}
+  {% if u.role == 'patient' and not locked %}
+  <form class="inline" method="post" action="{{ base }}/upload" enctype="multipart/form-data">
+    <input type="file" name="file" accept="application/pdf,image/jpeg,image/png" required>
+    <button class="btn ghost">Загрузить</button><span class="mute">PDF, JPG, PNG до 10 МБ. Только вымышленные данные.</span>
+  </form>{% endif %}
+</section>
+
+{% if u.role in ('patient','coordinator') %}
+<section class="panel">
+  <h2>Передача данных клиникам</h2>
+  {% if shares %}<div class="scroll"><table>
+    <thead><tr><th>Клиника</th><th>Статус согласия</th><th></th></tr></thead>
+    <tbody>{% for s, cl in shares %}<tr>
+      <td>{{ cl.name }}<div class="mute">{{ cl.city }}, {{ cl.country }}</div></td>
+      <td><span class="st st-{{ s.consent_status }}">{{ s.consent_status|ru }}</span></td>
+      <td>{% if u.role == 'patient' and s.consent_status == 'pending' %}
+        <form class="inline" method="post" action="{{ base }}/shares/{{ s.id }}/consent">
+          <button class="btn sm" name="approved" value="1">Разрешить передачу</button>
+          <button class="btn ghost sm" name="approved" value="0">Отклонить</button></form>
+        {% elif u.role == 'patient' and s.consent_status == 'approved' %}
+        <form method="post" action="{{ base }}/shares/{{ s.id }}/revoke" onsubmit="return confirm('Отозвать согласие? Клиника потеряет доступ, её действующие сметы будут отменены.')"><button class="btn ghost danger sm">Отозвать</button></form>{% endif %}</td>
+    </tr>{% endfor %}</tbody></table></div>
+  {% else %}<p class="empty">Запросов пока нет.{% if u.role == 'patient' %} Координатор предложит клинику, и вы подтвердите передачу здесь.{% endif %}</p>{% endif %}
+  {% if u.role == 'patient' and shares %}<p class="mute">Клиника видит описание и документы только после вашего согласия.</p>{% endif %}
+
+  {% if u.role == 'coordinator' and c.status in ('in_review','awaiting_clinic','offers_received') %}
+  <form class="inline" method="post" action="{{ base }}/share">
+    <select name="clinic_id" required><option value="">Выберите проверенную клинику…</option>
+      {% for cl in clinics %}<option value="{{ cl.id }}">{{ cl.name }} — {{ cl.city }}, {{ cl.country }}</option>{% endfor %}</select>
+    <button class="btn">Запросить согласие пациента</button>
+  </form>
+  {% if not clinics %}<p class="mute">Нет подходящих клиник с этим направлением, которым ещё не отправляли запрос.</p>{% endif %}
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="panel">
+  <h2>Предварительные сметы</h2>
+  {% if offers %}<div class="scroll"><table>
+    <thead><tr><th>Клиника</th><th>Диапазон</th><th>Что входит</th><th>Действует до</th><th>Статус</th><th></th></tr></thead>
+    <tbody>{% for o in offers %}<tr>
+      <td>{{ o.clinic_name }}</td><td class="nowrap"><b>{{ '{:,}'.format(o.price_min).replace(',', ' ') }} – {{ '{:,}'.format(o.price_max).replace(',', ' ') }}</b> {{ o.currency }}</td>
+      <td class="pre">{{ o.details }}</td><td class="nowrap">{{ o.valid_until }}</td>
+      <td><span class="st st-{{ o.status }}">{{ o.status|ru }}</span>{% if o.expired and o.status == 'active' %} <span class="mute">срок истёк</span>{% endif %}</td>
+      <td>{% if u.role == 'patient' and c.status == 'offers_received' and o.status == 'active' and not o.expired %}
+        <form method="post" action="{{ base }}/offers/{{ o.id }}/select" onsubmit="return confirm('Выбрать эту смету? Выбор нельзя изменить.')"><button class="btn sm">Выбрать</button></form>{% endif %}</td>
+    </tr>{% endfor %}</tbody></table></div>
+  {% else %}<p class="empty">Смет пока нет.</p>{% endif %}
+  <p class="mute">Предварительная смета не является окончательной ценой: стоимость подтверждают клиника и врач.</p>
+
+  {% if u.role == 'clinic' and c.status in ('awaiting_clinic','offers_received') %}
+  <form class="grid-form" method="post" action="{{ base }}/quote">
+    <h3>Отправить смету</h3>
+    <label>Передача<select name="share_id" required>{% for s in my_shares %}<option value="{{ s.id }}">Согласие №{{ s.id }}</option>{% endfor %}</select></label>
+    <label>Валюта<input name="currency" value="USD" maxlength="3" pattern="[A-Za-z]{3}" required></label>
+    <label>От<input type="number" name="price_min" min="0" required></label>
+    <label>До<input type="number" name="price_max" min="0" required></label>
+    <label>Действует до<input type="date" name="valid_until" required></label>
+    <label class="wide">Что входит в смету<textarea name="details" rows="3" required></textarea></label>
+    <button class="btn">Отправить смету</button>
+  </form>{% endif %}
+</section>
+
+{% if convs %}
+<section class="panel">
+  <h2>Переписка</h2>
+  {% for cv in convs %}
+  <div class="chat" data-case="{{ c.id }}" data-conv="{{ cv.id }}">
+    <h3>{{ cv.clinic_name if u.role != 'clinic' else 'Диалог по кейсу' }}</h3>
+    <ol class="msgs" aria-live="polite"></ol>
+    <form class="inline"><input name="body" maxlength="4000" placeholder="Сообщение" required><button class="btn sm">Отправить</button></form>
+  </div>{% endfor %}
+</section>
+{% endif %}
+{% endblock %}
+{% block scripts %}{% if convs %}<script src="/js/api.js"></script><script src="/js/chat.js"></script>{% endif %}{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block body %}
+<div class="head"><h1>{{ title }}</h1>{% if new %}<a class="btn" href="/case-new.html">Новая заявка</a>{% endif %}</div>
+
+{% if notes %}
+<section class="panel notes">
+  <div class="head"><h2>Уведомления{% if unread %} ({{ unread }} новых){% endif %}</h2>
+  {% if unread %}<form method="post" action="/notifications/read"><button class="btn ghost sm">Отметить прочитанными</button></form>{% endif %}</div>
+  <ul>{% for n in notes %}<li class="{{ '' if n.is_read else 'new' }}">{{ n.text }} <time>{{ n.created_at|dt }}</time></li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+{% if status is not none %}
+<form class="filters" method="get">
+  <label>Статус
+    <select name="status" onchange="this.form.submit()">
+      <option value="">Все</option>
+      {% for s in ['submitted','in_review','awaiting_clinic','offers_received','selected','closed','cancelled'] %}
+      <option value="{{ s }}" {{ 'selected' if s == status }}>{{ s|ru }}</option>{% endfor %}
+    </select></label>
+</form>
+{% endif %}
+
+{% if rows %}
+<div class="scroll"><table>
+  <thead><tr><th>№</th><th>Направление</th><th>Страна</th><th>Статус</th><th>Создана</th></tr></thead>
+  <tbody>{% for r in rows %}
+    <tr><td><a href="{{ r.url }}">№{{ r.c.id }}</a></td><td>{{ r.spec }}</td><td>{{ r.extra }}</td>
+    <td><span class="st st-{{ r.c.status }}">{{ r.c.status|ru }}</span></td><td>{{ r.c.created_at|dt }}</td></tr>{% endfor %}
+  </tbody></table></div>
+{% else %}
+<p class="empty">Здесь пока пусто.{% if new %} <a href="/case-new.html">Создайте первую заявку</a>, чтобы получить сметы клиник.{% endif %}</p>
+{% endif %}
+{% endblock %}

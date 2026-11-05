@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}{% endblock %} — Medical Navigator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="/">Medical Navigator</a>
+  <nav>
+    <a href="/clinics.html">Клиники</a>
+    <a href="{{ home }}">Кабинет</a>
+    {% if u.role == 'admin' %}<a href="/admin/moderation">Модерация</a>{% endif %}
+    {% if u.role == 'patient' %}<a href="/case-new.html">Новая заявка</a>{% endif %}
+    <span class="who">{{ u.full_name }} · {{ u.role|ru }}</span>
+    <form method="post" action="/logout"><button class="link">Выйти</button></form>
+  </nav>
+</header>
+<main class="wrap">
+  {% if ok %}<p class="flash ok">Готово.</p>{% endif %}
+  {% if err %}<p class="flash err">{{ err }}</p>{% endif %}
+  {% if note %}<p class="flash ok">{{ note }}</p>{% endif %}
+  {% block body %}{% endblock %}
+</main>
+{% block scripts %}{% endblock %}
+</body>
+</html>

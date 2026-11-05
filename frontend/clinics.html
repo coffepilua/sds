@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Клиники — Medical Navigator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div class="banner">Демо-версия: используйте только вымышленные данные и документы.</div>
+<header class="top"><a class="brand" href="/">Medical Navigator</a><nav id="nav"></nav></header>
+<main class="wrap">
+  <h1>Каталог клиник</h1>
+  <div class="filters">
+    <label>Страна<select id="f-country"><option value="">Все страны</option></select></label>
+    <label>Направление<select id="f-spec"><option value="">Все направления</option></select></label>
+  </div>
+  <div id="clinics" class="grid" data-limit="12"></div>
+  <div id="pager" class="pager"></div>
+</main>
+<script src="/js/api.js"></script><script src="/js/catalog.js"></script>
+</body></html>

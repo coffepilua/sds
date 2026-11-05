@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Вход — Medical Navigator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div class="banner">Демо-версия: используйте только вымышленные данные и документы.</div>
+<header class="top"><a class="brand" href="/">Medical Navigator</a><nav id="nav"></nav></header>
+<main class="wrap narrow">
+  <h1>Вход</h1>
+  <form data-auth="login">
+    <label>Email<input type="email" name="email" autocomplete="username" required></label>
+    <label>Пароль<input type="password" name="password" autocomplete="current-password" required></label>
+    <p id="msg" class="flash err" role="alert" style="display:none"></p>
+    <button class="btn">Войти</button>
+  </form>
+  <p>Нет аккаунта? <a href="/register.html">Зарегистрироваться как пациент</a></p>
+</main>
+<script src="/js/api.js"></script><script src="/js/auth.js"></script>
+<style>#msg:not(:empty){display:block!important}</style>
+</body></html>

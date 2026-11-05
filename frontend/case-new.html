@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Новая заявка — Medical Navigator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div class="banner">Демо-версия: используйте только вымышленные данные и документы.</div>
+<header class="top"><a class="brand" href="/">Medical Navigator</a><nav id="nav"></nav></header>
+<main class="wrap narrow">
+  <h1>Новая заявка</h1>
+  <p id="msg" class="flash err" role="alert" style="display:none"></p>
+  <form id="case">
+    <label>Направление<select name="specialty_id" required><option value="">Выберите…</option></select></label>
+    <label>Описание случая<textarea name="description" rows="5" required placeholder="Только вымышленные данные"></textarea></label>
+    <label>Страна лечения (необязательно)<input name="target_country" placeholder="India, Turkey…"></label>
+    <label>Бюджет, USD (необязательно)<input type="number" name="budget_usd" min="0"></label>
+    <label>Документы: PDF, JPG, PNG до 10 МБ<input type="file" name="docs" accept="application/pdf,image/jpeg,image/png" multiple></label>
+    <label class="chk"><input type="checkbox" name="send" checked> Сразу отправить координатору</label>
+    <button class="btn">Создать заявку</button>
+  </form>
+</main>
+<script src="/js/api.js"></script><script src="/js/case-new.js"></script>
+<style>#msg:not(:empty){display:block!important}</style>
+</body></html>

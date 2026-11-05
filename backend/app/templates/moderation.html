@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Модерация{% endblock %}
+{% block body %}
+<div class="head"><h1>Модерация</h1><a class="btn ghost" href="/admin">Администрирование</a></div>
+
+<section class="panel"><h2>Клиники на проверке ({{ pending|length }})</h2>
+  {% if pending %}<div class="scroll"><table>
+    <thead><tr><th></th><th>Клиника</th><th>Описание</th><th>Решение</th></tr></thead>
+    <tbody>{% for c in pending %}<tr>
+      <td>{% if c.cover %}<img class="thumb" src="{{ c.cover }}" alt="" onerror="this.style.visibility='hidden'">{% endif %}</td>
+      <td>{{ c.name }}<div class="mute">{{ c.city }}, {{ c.country }}</div>{% for s in c.specialties %}<span class="tag">{{ s.name }}</span>{% endfor %}</td>
+      <td class="pre">{{ c.description }}</td>
+      <td><form class="inline" method="post" action="/admin/clinics/{{ c.id }}">
+        <input type="hidden" name="back" value="/admin/moderation">
+        <button class="btn sm" name="verification_status" value="verified">Подтвердить</button>
+        <button class="btn ghost danger sm" name="verification_status" value="rejected">Отклонить</button></form></td>
+    </tr>{% endfor %}</tbody></table></div>
+  {% else %}<p class="empty">Очередь пуста: все клиники проверены.</p>{% endif %}
+</section>
+
+<section class="panel"><h2>Действующие сметы</h2>
+  {% if offers %}<div class="scroll"><table>
+    <thead><tr><th>№</th><th>Кейс</th><th>Клиника</th><th>Диапазон</th><th>Условия</th><th>До</th><th></th></tr></thead>
+    <tbody>{% for o, cl, s in offers %}<tr>
+      <td>{{ o.id }}</td><td>№{{ s.case_id }}</td><td>{{ cl.name }}</td>
+      <td class="nowrap">{{ o.price_min }} – {{ o.price_max }} {{ o.currency }}</td><td class="pre">{{ o.details }}</td><td>{{ o.valid_until }}</td>
+      <td><form method="post" action="/admin/moderation/offers/{{ o.id }}/cancel" onsubmit="return confirm('Отменить смету? Клиника получит уведомление.')"><button class="btn ghost danger sm">Отменить</button></form></td>
+    </tr>{% endfor %}</tbody></table></div>
+  {% else %}<p class="empty">Действующих смет нет.</p>{% endif %}
+</section>
+
+<section class="panel"><h2>Журнал аудита</h2>
+  <p class="mute">Последние 60 событий. Тексты диагнозов, выписок и паролей в журнал не попадают.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Время</th><th>Кто</th><th>Действие</th><th>Объект</th></tr></thead>
+    <tbody>{% for a, email in log %}<tr><td class="nowrap">{{ a.occurred_at|dt }}</td><td>{{ email or 'система' }}</td><td>{{ a.action }}</td><td>{{ a.entity_type }} №{{ a.entity_id }}</td></tr>{% endfor %}</tbody></table></div>
+</section>
+{% endblock %}
